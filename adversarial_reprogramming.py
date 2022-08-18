@@ -110,7 +110,7 @@ class InverseSoftSign(tf.keras.initializers.Initializer):
 class AdditiveProgram(tf.keras.layers.Layer):
     """A layer that augments the input with a (trainable) adversarial program"""
 
-    def __init__(self, input_value_range=0.5, model=None, image_mask=None, **kwargs):
+    def __init__(self, input_value_range=1.0, model=None, image_mask=None, **kwargs):
         super().__init__(**kwargs)
         self.input_value_range = input_value_range
         self.model = model
@@ -127,11 +127,13 @@ class AdditiveProgram(tf.keras.layers.Layer):
             trainable=True,
         )
 
+    @tf.function
     def get_program(self):
         """Returns the adversarial program with pixel values between 0 and 1."""
 
         return (tf.nn.softsign(self.program) + 1) / 2
 
+    @tf.function
     def combine_program_with_image(self, image):
         """convex combination of input and adversarial program"""
 
@@ -139,6 +141,7 @@ class AdditiveProgram(tf.keras.layers.Layer):
             1 - self.input_value_range * self.image_mask
         ) * self.get_program() * 255 + self.input_value_range * image
 
+    @tf.function
     def call(self, inputs):
         """Combine the input with the program and feed through the core model
         if it exists."""
